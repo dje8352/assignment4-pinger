@@ -50,6 +50,13 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
         # Fill in start
 
         # Fetch the ICMP header from the IP packet
+        icmpHeader = recPacket[20:28]
+        icmpType, code, checksum, packetID, sequence = struct.unpack("bbHHh", icmpHeader)
+    
+        if icmpType == 0 and packetID == ID:
+            byte = struct.calcsize("d")
+            timeSent = struct.unpack("d", recPacket[28:28 + byte])[0]
+            return timeReceived - timeSent
 
         # Fill in end
         timeLeft = timeLeft - howLongInSelect
@@ -109,14 +116,23 @@ def ping(host, timeout=1):
     
     #Send ping requests to a server separated by approximately one second
     #Add something here to collect the delays of each ping in a list so you can calculate vars after your ping
+    delayList = []
     
     for i in range(0,4): #Four pings will be sent (loop runs for i=0, 1, 2, 3)
         delay = doOnePing(dest, timeout)
+        delayList.append(delay)
         print(delay)
         time.sleep(1)  # one second
         
     #You should have the values of delay for each ping here; fill in calculation for packet_min, packet_avg, packet_max, and stdev
-    #vars = [str(round(packet_min, 8)), str(round(packet_avg, 8)), str(round(packet_max, 8)),str(round(stdev(stdev_var), 8))]
+    packet_min = min(delayList)
+    packet_avg = (sum(delayList)) / (len(delayList))
+    packet_max = max(delayList)
+
+    variance = sum([((x - packet_avg) ** 2) for x in delayList]) / len(delayList)
+    stdev = variance ** 0.5
+
+    vars = [str(round(packet_min, 8)), str(round(packet_avg, 8)), str(round(packet_max, 8)),str(round(stdev, 8))]
 
     return vars
 
